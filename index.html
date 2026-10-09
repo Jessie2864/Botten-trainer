@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="nl" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skelet Trainer Pro - Biologie & Anatomie Game</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* SVG Bone styling */
+    .bone {
+      fill: #cbd5e1;
+      stroke: #334155;
+      stroke-width: 1.5px;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      cursor: pointer;
+      transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease, transform 0.2s ease;
+      filter: none !important;
+    }
+
+    .bone:hover {
+      fill: #94a3b8;
+      stroke: #0284c7;
+      stroke-width: 2px;
+    }
+
+    /* Target / Highlighted Bone Fill */
+    .bone.highlighted {
+      fill: #00f0b5 !important;
+      stroke: #0284c7 !important;
+      stroke-width: 2.5px !important;
+      filter: none !important;
+    }
+
+    /* Correct Pick Fill */
+    .bone.correct-flash {
+      fill: #10b981 !important;
+      stroke: #047857 !important;
+      stroke-width: 3px !important;
+    }
+
+    /* Wrong Pick Fill */
+    .bone.wrong-flash {
+      fill: #f43f5e !important;
+      stroke: #be123c !important;
+      stroke-width: 3px !important;
+    }
+
+    /* Animated viewBox canvas */
+    #skeleton-svg {
+      transition: viewBox 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+      will-change: viewBox;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-x-hidden text-slate-100 bg-slate-950">
+
+  <!-- Top Bar / Header -->
+  <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center justify-between w-full sm:w-auto">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+            <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              Skelet Trainer Pro
+            </h1>
+            <p class="text-xs text-slate-400 font-medium">Anatomie Level Progressie Modus</p>
+          </div>
+        </div>
+
+        <!-- Audio Toggle Button Mobile -->
+        <button id="sound-toggle-btn" onclick="toggleAudio()" class="sm:hidden p-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700">
+          🔊
+        </button>
+      </div>
+
+      <!-- Navigation Tabs with Level Progression Indicators -->
+      <nav class="flex p-1 bg-slate-800/80 rounded-xl border border-slate-700/60 w-full sm:w-auto overflow-x-auto text-xs sm:text-sm font-semibold gap-1">
+        <button id="tab-btn-quiz" onclick="switchTab('quiz')" class="flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 shadow whitespace-nowrap">
+          <span>🧠</span> <span>Lvl 1: Quiz</span>
+        </button>
+        <button id="tab-btn-pinpoint" onclick="switchTab('pinpoint')" class="flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 text-slate-400 hover:text-white relative whitespace-nowrap">
+          <span id="level2-lock-icon">🔒</span> <span>Lvl 2: Aanwijzen</span>
+        </button>
+        <button id="tab-btn-timeattack" onclick="switchTab('timeattack')" class="flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 text-slate-400 hover:text-white relative whitespace-nowrap">
+          <span id="level3-lock-icon">🔒</span> <span>Lvl 3: Tijdrace</span>
+        </button>
+        <button id="tab-btn-explore" onclick="switchTab('explore')" class="flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 text-slate-300 hover:text-white whitespace-nowrap">
+          <span>🔍</span> Verkennen
+        </button>
+      </nav>
+
+      <!-- Desktop Audio Toggle -->
+      <button id="sound-toggle-desktop" onclick="toggleAudio()" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+        <span id="sound-icon">🔊</span> Geluid: <span id="sound-status" class="text-emerald-400">AAN</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Layout Grid -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT PANEL: SVG Skeleton Canvas -->
+    <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-between min-h-[560px] lg:min-h-[680px] relative shadow-2xl overflow-hidden">
+      
+      <!-- Top Canvas Controls & Zoom Buttons -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-2 z-10 mb-1">
+        <div class="flex items-center gap-1.5">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+            <span id="skeleton-status-label">21 Botten Interactief</span>
+          </span>
+        </div>
+
+        <!-- Manual Zoom Controls -->
+        <div class="flex items-center gap-1">
+          <button onclick="manualZoom(0.8)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold transition" title="Inzoomen">+</button>
+          <button onclick="manualZoom(1.25)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-bold transition" title="Uitzoomen">-</button>
+          <button onclick="resetZoom()" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1" title="Herstel Zoom">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            Herstel
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Anatomical Region Zoom Buttons -->
+      <div class="w-full flex items-center justify-center gap-1 flex-wrap z-10 mb-2 py-1 border-y border-slate-800/80 bg-slate-950/40">
+        <span class="text-[10px] uppercase font-bold text-slate-400 mr-1">Focus:</span>
+        <button onclick="zoomToRegion('hoofd')" class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Hoofd</button>
+        <button onclick="zoomToRegion('borstkas')" class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Borstkas</button>
+        <button onclick="zoomToRegion('wervelkolom')" class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Wervelkolom</button>
+        <button onclick="zoomToRegion('armhand')" class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Arm/Hand</button>
+        <button onclick="zoomToRegion('bekkenbeen')" class="px-2 py-0.5 text-[11px] font-medium rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Bekken/Benen</button>
+      </div>
+
+      <!-- Interactive SVG Skeleton Container -->
+      <div class="w-full h-full flex-1 flex items-center justify-center relative">
+        <svg id="skeleton-svg" viewBox="0 0 400 780" class="w-full h-full max-h-[580px]">
+
+          <!-- Skeleton Central Group -->
+          <g id="skeleton-group">
+            
+            <!-- 1. SCHEDEL -->
+            <g id="bone-schedel" class="bone-group" onclick="handleBoneClick('schedel')" data-name="Schedel">
+              <path class="bone" d="M 160 80 C 160 30, 240 30, 240 80 C 240 100, 225 115, 220 120 L 180 120 C 175 115, 160 100, 160 80 Z" />
+              <path class="bone" d="M 170 120 L 230 120 L 220 135 L 180 135 Z" />
+              <ellipse cx="182" cy="78" rx="8" ry="10" fill="#0f172a" />
+              <ellipse cx="218" cy="78" rx="8" ry="10" fill="#0f172a" />
+              <polygon points="200,88 194,102 206,102" fill="#0f172a" />
+            </g>
+
+            <!-- 2. HALSWERVELS -->
+            <g id="bone-halswervels" class="bone-group" onclick="handleBoneClick('halswervels')" data-name="Halswervels">
+              <rect class="bone" x="190" y="137" width="20" height="4" rx="1" />
+              <rect class="bone" x="189" y="143" width="22" height="4" rx="1" />
+              <rect class="bone" x="189" y="149" width="22" height="4" rx="1" />
+              <rect class="bone" x="188" y="155" width="24" height="4" rx="1" />
+              <rect class="bone" x="188" y="161" width="24" height="4" rx="1" />
+              <rect class="bone" x="187" y="167" width="26" height="4" rx="1" />
+              <rect class="bone" x="187" y="173" width="26" height="5" rx="1" />
+            </g>
+
+            <!-- 3. SLEUTELBEEN -->
+            <g id="bone-sleutelbeen" class="bone-group" onclick="handleBoneClick('sleutelbeen')" data-name="Sleutelbeen">
+              <path class="bone" d="M 200 178 C 175 174, 150 162, 132 170 C 130 172, 132 176, 136 176 C 155 170, 175 180, 200 181 Z" />
+              <path class="bone" d="M 200 178 C 225 174, 250 162, 268 170 C 270 172, 268 176, 264 176 C 245 170, 225 180, 200 181 Z" />
+            </g>
+
+            <!-- 4. SCHOUDERBLAD -->
+            <g id="bone-schouderblad" class="bone-group" onclick="handleBoneClick('schouderblad')" data-name="Schouderblad">
+              <path class="bone" d="M 130 175 L 115 185 L 138 225 L 146 190 Z" />
+              <path class="bone" d="M 270 175 L 285 185 L 262 225 L 254 190 Z" />
+            </g>
+
+            <!-- 5. BORSTWERVELS -->
+            <g id="bone-borstwervels" class="bone-group" onclick="handleBoneClick('borstwervels')" data-name="Borstwervels">
+              <rect class="bone" x="187" y="180" width="26" height="6" rx="1" />
+              <rect class="bone" x="187" y="188" width="26" height="6" rx="1" />
+              <rect class="bone" x="186" y="196" width="28" height="6" rx="1" />
+              <rect class="bone" x="186" y="204" width="28" height="6" rx="1" />
+              <rect class="bone" x="186" y="212" width="28" height="6" rx="1" />
+              <rect class="bone" x="185" y="220" width="30" height="6" rx="1" />
+              <rect class="bone" x="185" y="228" width="30" height="6" rx="1" />
+              <rect class="bone" x="185" y="236" width="30" height="6" rx="1" />
+              <rect class="bone" x="184" y="244" width="32" height="6" rx="1" />
+              <rect class="bone" x="184" y="252" width="32" height="6" rx="1" />
+              <rect class="bone" x="184" y="260" width="32" height="6" rx="1" />
+              <rect class="bone" x="183" y="268" width="34" height="6" rx="1" />
+            </g>
+
+            <!-- 6. RIBBEN -->
+            <g id="bone-ribben" class="bone-group" onclick="handleBoneClick('ribben')" data-name="Ribben">
+              <path class="bone" d="M 188 185 C 150 185, 135 200, 192 205" fill="none" />
+              <path class="bone" d="M 188 193 C 145 195, 130 215, 192 218" fill="none" />
+              <path class="bone" d="M 187 201 C 140 205, 125 230, 192 231" fill="none" />
+              <path class="bone" d="M 187 209 C 138 215, 122 242, 192 244" fill="none" />
+              <path class="bone" d="M 186 217 C 135 225, 120 255, 192 257" fill="none" />
+              <path class="bone" d="M 186 225 C 135 235, 122 265, 192 268" fill="none" />
+              <path class="bone" d="M 212 185 C 250 185, 265 200, 208 205" fill="none" />
+              <path class="bone" d="M 212 193 C 255 195, 270 215, 208 218" fill="none" />
+              <path class="bone" d="M 213 201 C 260 205, 275 230, 208 231" fill="none" />
+              <path class="bone" d="M 213 209 C 262 215, 278 242, 208 244" fill="none" />
+              <path class="bone" d="M 214 217 C 265 225, 280 255, 208 257" fill="none" />
+              <path class="bone" d="M 214 225 C 265 235, 278 265, 208 268" fill="none" />
+            </g>
+
+            <!-- 7. BORSTBEEN -->
+            <g id="bone-borstbeen" class="bone-group" onclick="handleBoneClick('borstbeen')" data-name="Borstbeen">
+              <path class="bone" d="M 194 180 L 206 180 L 204 250 L 200 262 L 196 250 Z" />
+            </g>
+
+            <!-- 8. LENDEWERVELS -->
+            <g id="bone-lendewervels" class="bone-group" onclick="handleBoneClick('lendewervels')" data-name="Lendewervels">
+              <rect class="bone" x="182" y="277" width="36" height="8" rx="2" />
+              <rect class="bone" x="181" y="287" width="38" height="8" rx="2" />
+              <rect class="bone" x="180" y="297" width="40" height="9" rx="2" />
+              <rect class="bone" x="179" y="308" width="42" height="9" rx="2" />
+              <rect class="bone" x="178" y="319" width="44" height="10" rx="2" />
+            </g>
+
+            <!-- 9. HEUPBEEN -->
+            <g id="bone-heupbeen" class="bone-group" onclick="handleBoneClick('heupbeen')" data-name="Heupbeen">
+              <path class="bone" d="M 175 328 C 140 320, 125 350, 138 385 C 145 400, 170 410, 182 395 C 185 375, 178 345, 175 328 Z" />
+              <path class="bone" d="M 225 328 C 260 320, 275 350, 262 385 C 255 400, 230 410, 218 395 C 215 375, 222 345, 225 328 Z" />
+            </g>
+
+            <!-- 10. HEILIGBEEN -->
+            <g id="bone-heiligbeen" class="bone-group" onclick="handleBoneClick('heiligbeen')" data-name="Heiligbeen">
+              <path class="bone" d="M 180 330 L 220 330 L 210 380 L 190 380 Z" />
+              <circle cx="192" cy="345" r="2" fill="#0f172a" />
+              <circle cx="208" cy="345" r="2" fill="#0f172a" />
+              <circle cx="194" cy="360" r="1.8" fill="#0f172a" />
+              <circle cx="206" cy="360" r="1.8" fill="#0f172a" />
+            </g>
+
+            <!-- 11. STAARTBEEN -->
+            <g id="bone-staartbeen" class="bone-group" onclick="handleBoneClick('staartbeen')" data-name="Staartbeen">
+              <path class="bone" d="M 192 381 L 208 381 L 203 400 L 197 400 Z" />
+            </g>
+
+            <!-- 12. OPPERARMBEEN -->
+            <g id="bone-opperarmbeen" class="bone-group" onclick="handleBoneClick('opperarmbeen')" data-name="Opperarmbeen">
+              <path class="bone" d="M 124 186 C 118 186, 114 195, 118 200 L 108 275 C 104 280, 116 288, 120 280 L 128 200 C 132 195, 128 186, 124 186 Z" />
+              <path class="bone" d="M 276 186 C 282 186, 286 195, 282 200 L 292 275 C 296 280, 284 288, 280 280 L 272 200 C 268 195, 272 186, 276 186 Z" />
+            </g>
+
+            <!-- 13. SPAAKBEEN -->
+            <g id="bone-spaakbeen" class="bone-group" onclick="handleBoneClick('spaakbeen')" data-name="Spaakbeen">
+              <path class="bone" d="M 106 284 L 90 350 L 97 352 L 112 286 Z" />
+              <path class="bone" d="M 294 284 L 310 350 L 303 352 L 288 286 Z" />
+            </g>
+
+            <!-- 14. ELLEPIJP -->
+            <g id="bone-ellepijp" class="bone-group" onclick="handleBoneClick('ellepijp')" data-name="Ellepijp">
+              <path class="bone" d="M 115 284 L 100 350 L 106 352 L 121 286 Z" />
+              <path class="bone" d="M 285 284 L 300 350 L 294 352 L 279 286 Z" />
+            </g>
+
+            <!-- 15. HANDWORTELBEENTJES -->
+            <g id="bone-handwortelbeentjes" class="bone-group" onclick="handleBoneClick('handwortelbeentjes')" data-name="Handwortelbeentjes">
+              <rect class="bone" x="88" y="353" width="9" height="6" rx="2" />
+              <rect class="bone" x="98" y="353" width="9" height="6" rx="2" />
+              <rect class="bone" x="87" y="360" width="10" height="6" rx="2" />
+              <rect class="bone" x="98" y="360" width="10" height="6" rx="2" />
+              <rect class="bone" x="293" y="353" width="9" height="6" rx="2" />
+              <rect class="bone" x="303" y="353" width="9" height="6" rx="2" />
+              <rect class="bone" x="292" y="360" width="10" height="6" rx="2" />
+              <rect class="bone" x="303" y="360" width="10" height="6" rx="2" />
+            </g>
+
+            <!-- 16. MIDDENHANDSBEENTJES -->
+            <g id="bone-middenhandsbeentjes" class="bone-group" onclick="handleBoneClick('middenhandsbeentjes')" data-name="Middenhandsbeentjes">
+              <path class="bone" d="M 86 368 L 70 382 L 75 388 L 89 373 Z" />
+              <path class="bone" d="M 314 368 L 330 382 L 325 388 L 311 373 Z" />
+              <path class="bone" d="M 86 368 L 108 370 L 104 395 L 82 392 Z" />
+              <path class="bone" d="M 314 368 L 292 370 L 296 395 L 318 392 Z" />
+            </g>
+
+            <!-- 17. VINGERKOOTJES -->
+            <g id="bone-vingerkootjes" class="bone-group" onclick="handleBoneClick('vingerkootjes')" data-name="Vingerkootjes">
+              <path class="bone" d="M 70 382 L 58 402 L 63 405 L 74 387 Z" />
+              <path class="bone" d="M 330 382 L 342 402 L 337 405 L 326 387 Z" />
+              <path class="bone" d="M 82 394 L 78 425 L 83 425 L 87 395 Z" />
+              <path class="bone" d="M 88 395 L 86 430 L 91 430 L 93 396 Z" />
+              <path class="bone" d="M 94 396 L 94 432 L 99 432 L 99 396 Z" />
+              <path class="bone" d="M 100 396 L 103 424 L 107 424 L 103 395 Z" />
+              <path class="bone" d="M 318 394 L 322 425 L 317 425 L 313 395 Z" />
+              <path class="bone" d="M 312 395 L 314 430 L 309 430 L 307 396 Z" />
+              <path class="bone" d="M 306 396 L 306 432 L 301 432 L 301 396 Z" />
+              <path class="bone" d="M 300 396 L 297 424 L 293 424 L 297 395 Z" />
+            </g>
+
+            <!-- 18. DIJBEEN -->
+            <g id="bone-dijbeen" class="bone-group" onclick="handleBoneClick('dijbeen')" data-name="Dijbeen">
+              <path class="bone" d="M 152 390 C 145 390, 142 400, 148 405 L 140 535 C 135 545, 155 550, 160 540 L 165 405 C 170 395, 160 390, 152 390 Z" />
+              <path class="bone" d="M 248 390 C 255 390, 258 400, 252 405 L 260 535 C 265 545, 245 550, 240 540 L 235 405 C 230 395, 240 390, 248 390 Z" />
+            </g>
+
+            <!-- 19. KNIESCHIJF -->
+            <g id="bone-knieschijf" class="bone-group" onclick="handleBoneClick('knieschijf')" data-name="Knieschijf">
+              <ellipse class="bone" cx="150" cy="542" rx="9" ry="8" />
+              <ellipse class="bone" cx="250" cy="542" rx="9" ry="8" />
+            </g>
+
+            <!-- 20. SCHEENBEEN -->
+            <g id="bone-scheenbeen" class="bone-group" onclick="handleBoneClick('scheenbeen')" data-name="Scheenbeen">
+              <path class="bone" d="M 142 552 L 158 552 L 152 705 L 138 705 Z" />
+              <path class="bone" d="M 258 552 L 242 552 L 248 705 L 262 705 Z" />
+            </g>
+
+            <!-- 21. KUITBEEN -->
+            <g id="bone-kuitbeen" class="bone-group" onclick="handleBoneClick('kuitbeen')" data-name="Kuitbeen">
+              <path class="bone" d="M 136 558 L 142 558 L 134 703 L 129 703 Z" />
+              <path class="bone" d="M 264 558 L 258 558 L 266 703 L 271 703 Z" />
+            </g>
+
+          </g>
+        </svg>
+      </div>
+
+      <!-- Bottom Highlight Legend Notice -->
+      <div class="w-full text-center mt-2 py-1.5 px-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-center gap-2">
+        <span class="w-3 h-3 rounded-sm border border-cyan-400 bg-[#00f0b5]"></span>
+        <span class="text-xs text-slate-300 font-medium">Ingekleurd bot komt overeen met de actieve vraag</span>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Tab Viewport -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- TAB 1: LEVEL 1 - QUIZ MODUS -->
+      <div id="tab-content-quiz" class="space-y-6">
+        
+        <!-- Scoreboard Card & Level 1 Progress -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[11px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">Level 1</span>
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">Botten Beheerst</p>
+              </div>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span id="quiz-mastered-count" class="text-3xl font-extrabold text-emerald-400">0</span>
+                <span class="text-sm text-slate-400">/ 21 unieke botten goed</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <!-- Levens Display -->
+              <div class="text-right">
+                <p class="text-xs uppercase tracking-wider text-rose-400 font-bold flex items-center justify-end gap-1">
+                  💀 Levens
+                </p>
+                <div id="quiz-lives" class="text-xl font-bold mt-0.5 tracking-wider flex items-center justify-end gap-1">
+                  <span>💀</span><span>💀</span><span>💀</span>
+                </div>
+              </div>
+
+              <div class="text-right border-l border-slate-800 pl-4">
+                <p class="text-xs uppercase tracking-wider text-amber-400/90 font-bold flex items-center justify-end gap-1">
+                  🔥 Streak
+                </p>
+                <p id="quiz-streak" class="text-xl font-bold text-amber-400 mt-0.5">0</p>
+              </div>
+
+              <!-- Mistakes Review Counter -->
+              <div class="text-right border-l border-slate-800 pl-4">
+                <p class="text-xs uppercase tracking-wider text-rose-400/90 font-bold flex items-center justify-end gap-1">
+                  ⚠️ Herhalen
+                </p>
+                <p id="quiz-mistakes-count" class="text-xl font-bold text-rose-400 mt-0.5">0</p>
+              </div>
+
+              <button onclick="restartQuiz()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition ml-1" title="Herstart Level 1">
+                🔄
+              </button>
+            </div>
+          </div>
+
+          <!-- Quiz Mode Selector Toggle (Adaptive vs Random) -->
+          <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+              💡 Quiz Strategie:
+            </span>
+            <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button id="mode-btn-adaptive" onclick="setQuizMode('adaptive')" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 shadow">
+                🧠 Slim Herhalen
+              </button>
+              <button id="mode-btn-random" onclick="setQuizMode('random')" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                🎲 Willekeurig
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question Box -->
+        <div id="quiz-question-box" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 relative">
+          
+          <!-- Repeat Badge Notice -->
+          <div id="repeat-notice-badge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold w-fit">
+            ⚠️ Herhaalvraag (Eerder fout beantwoord)
+          </div>
+
+          <div class="space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-[#00f0b5]"></span>
+              Vraag <span id="question-number">1</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white">
+              Welk bot is op de afbeelding <span class="text-[#00f0b5] underline decoration-cyan-500/50 underline-offset-4">groen</span> gekleurd?
+            </h2>
+            <p class="text-xs text-slate-400">Bekijk het uitgelichte bot op de kaart en kies de juiste optie.</p>
+          </div>
+
+          <!-- Answer Option Buttons Grid -->
+          <div id="quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <!-- Dynamic answer buttons inserted here via JS -->
+          </div>
+
+          <!-- Question Feedback Banner -->
+          <div id="quiz-feedback" class="hidden p-4 rounded-xl border font-medium text-sm transition-all duration-300 flex items-center gap-3">
+            <div id="feedback-icon" class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-slate-950"></div>
+            <div id="feedback-text"></div>
+          </div>
+        </div>
+
+        <!-- Game Over Card -->
+        <div id="quiz-gameover-card" class="hidden bg-slate-900 border-2 border-rose-500/60 rounded-2xl p-6 shadow-2xl text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center mx-auto text-rose-400 text-2xl font-bold">
+            💀
+          </div>
+          <div>
+            <h3 class="text-2xl font-extrabold text-rose-400">Game Over!</h3>
+            <p class="text-sm text-slate-300 mt-1">Je bent al je 3 levens kwijtgeraakt. Probeer het opnieuw om Level 1 te halen!</p>
+          </div>
+          <button onclick="restartQuiz()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 font-extrabold shadow-lg transition hover:brightness-110">
+            Opnieuw Proberen 🔄
+          </button>
+        </div>
+
+        <!-- Level 1 Completion Card & Unlock Level 2 Button -->
+        <div id="quiz-completion-card" class="hidden bg-slate-900 border-2 border-emerald-500/60 rounded-2xl p-6 shadow-2xl text-center space-y-5 animate-bounce-short">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto text-emerald-400 text-3xl font-bold">
+            🏆
+          </div>
+          <div class="space-y-2">
+            <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold border border-emerald-500/40 uppercase">LEVEL 1 VOLTOOID!</span>
+            <h3 class="text-2xl font-black text-emerald-400">Gefeliciteerd! 🎉</h3>
+            <p class="text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+              Je hebt alle <strong>21 VWO botten & wervels</strong> minstens 1 keer goed beantwoord in de Quiz!
+            </p>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="unlockAndStartLevel2()" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 text-slate-950 font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-2">
+              <span>Ga naar Level 2: Aanwijzen 🎯</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LEVEL 2 - AANWIJS GAME (Pinpoint Mode) -->
+      <div id="tab-content-pinpoint" class="hidden space-y-6">
+        
+        <!-- Locked Level 2 Notice (If opened before Level 1 is finished) -->
+        <div id="level2-locked-card" class="hidden bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-6 shadow-xl text-center space-y-4">
+          <div class="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400 text-2xl font-bold">
+            🔒
+          </div>
+          <div>
+            <h3 class="text-xl font-extrabold text-amber-400">Level 2 is nog Vergrendeld!</h3>
+            <p class="text-sm text-slate-300 mt-1 max-w-md mx-auto">
+              Haal eerst <strong>Level 1 (Quiz Modus)</strong> door alle 21 botten minstens 1 keer goed te beantwoorden.
+            </p>
+          </div>
+          <button onclick="switchTab('quiz')" class="py-2.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition">
+            Speel Level 1 Quiz 🧠
+          </button>
+        </div>
+
+        <!-- Active Level 2 Game Viewport -->
+        <div id="level2-active-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <span class="px-2.5 py-1 rounded-md bg-cyan-500/10 text-cyan-400 font-bold text-xs border border-cyan-500/20">Level 2 Challenge</span>
+              <h2 class="text-xl font-extrabold text-white mt-1">Klik op het juiste bot!</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block uppercase font-bold">Level 2 Voortgang</span>
+              <span class="text-xl font-black text-emerald-400">
+                <span id="pinpoint-found-count">0</span> / 21 botten
+              </span>
+            </div>
+          </div>
+
+          <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-2 shadow-inner">
+            <p class="text-xs uppercase tracking-wider font-bold text-slate-400">Zoek en klik direct op het skelet:</p>
+            <h3 id="pinpoint-target-name" class="text-2xl sm:text-3xl font-black text-cyan-400 tracking-wide">...</h3>
+            <p id="pinpoint-hint" class="text-xs text-slate-400 italic">Klik op de SVG-tekening aan de linkerkant!</p>
+          </div>
+
+          <div id="pinpoint-feedback" class="hidden p-3.5 rounded-xl text-xs font-bold text-center transition"></div>
+        </div>
+
+        <!-- Level 2 Completion Card -->
+        <div id="level2-completion-card" class="hidden bg-slate-900 border-2 border-cyan-500/60 rounded-2xl p-6 shadow-2xl text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-cyan-500/20 border-2 border-cyan-400 flex items-center justify-center mx-auto text-cyan-300 text-3xl font-bold">
+            👑
+          </div>
+          <div class="space-y-2">
+            <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-extrabold border border-cyan-500/40 uppercase">LEVEL 2 VOLTOOID!</span>
+            <h3 class="text-2xl font-black text-cyan-400">Anatomie Master! 🎓</h3>
+            <p class="text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+              Je hebt alle 21 VWO botten zowel in de Quiz als op het skelet vlekkeloos aan kunnen wijzen!
+            </p>
+          </div>
+          <div class="pt-2 space-y-3">
+            <button onclick="unlockAndStartLevel3()" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-2">
+              <span>Ga naar Level 3: Tijdrace ⏱️</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
+            <button onclick="restartLevel2()" class="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold shadow-lg transition">
+              Level 2 Herhalen 🎯
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 4: LEVEL 3 - TIME ATTACK (Mixed) -->
+      <div id="tab-content-timeattack" class="hidden space-y-6">
+        
+        <!-- Locked Level 3 Notice -->
+        <div id="level3-locked-card" class="hidden bg-slate-900 border-2 border-fuchsia-500/40 rounded-2xl p-6 shadow-xl text-center space-y-4">
+          <div class="w-14 h-14 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 flex items-center justify-center mx-auto text-fuchsia-400 text-2xl font-bold">
+            🔒
+          </div>
+          <div>
+            <h3 class="text-xl font-extrabold text-fuchsia-400">Level 3 is nog Vergrendeld!</h3>
+            <p class="text-sm text-slate-300 mt-1 max-w-md mx-auto">
+              Haal eerst <strong>Level 2 (Aanwijzen)</strong> door alle 21 botten correct op het skelet aan te klikken.
+            </p>
+          </div>
+          <button onclick="switchTab('pinpoint')" class="py-2.5 px-5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition">
+            Speel Level 2 Aanwijzen 🎯
+          </button>
+        </div>
+
+        <!-- Level 3 Start Screen -->
+        <div id="level3-start-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl text-center space-y-5">
+          <div class="w-16 h-16 rounded-full bg-fuchsia-500/20 border-2 border-fuchsia-500/50 flex items-center justify-center mx-auto text-fuchsia-400 text-3xl font-bold">
+            ⏱️
+          </div>
+          <div>
+            <h2 class="text-2xl font-black text-white">Tijdrace Challenge</h2>
+            <p class="text-sm text-slate-400 mt-2 max-w-md mx-auto">
+              Test je kennis onder druk! Je hebt <strong>60 seconden</strong> de tijd. De vragen wisselen razendsnel af tussen <em>Quiz-vragen</em> en direct <em>Aanwijzen</em> op het skelet.
+            </p>
+          </div>
+          <button onclick="startTimeAttack()" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition">
+            Start Tijdrace! 🚀
+          </button>
+        </div>
+
+        <!-- Level 3 Active Game -->
+        <div id="level3-active-card" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <span class="text-xs text-slate-400 block uppercase font-bold">Huidige Score</span>
+              <span class="text-2xl font-black text-fuchsia-400" id="l3-score">0</span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block uppercase font-bold text-rose-400">Tijd Over</span>
+              <div class="flex items-center justify-end gap-1">
+                <span class="text-2xl font-black text-white" id="l3-time">60</span><span class="text-slate-400">s</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prompt Area -->
+          <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-2 shadow-inner min-h-[110px] flex flex-col justify-center">
+            <h3 id="l3-prompt" class="text-xl sm:text-2xl font-bold text-white tracking-wide">...</h3>
+          </div>
+
+          <!-- Options Area (Only for Quiz Mode) -->
+          <div id="l3-options-container" class="space-y-3">
+             <div id="l3-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+             </div>
+          </div>
+
+          <!-- Feedback Area -->
+          <div id="l3-feedback" class="hidden p-3.5 rounded-xl text-sm font-bold text-center transition"></div>
+        </div>
+
+        <!-- Level 3 Result Screen -->
+        <div id="level3-result-card" class="hidden bg-slate-900 border-2 border-purple-500/60 rounded-2xl p-6 shadow-2xl text-center space-y-5">
+           <div class="w-16 h-16 rounded-full bg-purple-500/20 border-2 border-purple-400 flex items-center justify-center mx-auto text-purple-300 text-3xl font-bold">
+            🏁
+          </div>
+          <div>
+            <h3 class="text-2xl font-black text-purple-400">Tijd is om!</h3>
+            <p class="text-slate-300 mt-2">Je had <strong class="text-2xl text-white mx-1" id="l3-final-score">0</strong> botten goed in 60 seconden.</p>
+            <p class="text-sm text-slate-400 mt-2">Jouw Highscore: <span id="l3-high-score" class="font-bold text-fuchsia-400">0</span></p>
+          </div>
+          <button onclick="startTimeAttack()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-extrabold shadow-lg hover:brightness-110 transition">
+            Nog een keer proberen! 🔄
+          </button>
+        </div>
+
+      </div>
+
+      <!-- TAB 5: SKELET VERKENNEN -->
+      <div id="tab-content-explore" class="hidden space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              🔍 Klik op een bot of kies uit de lijst
+            </h2>
+          </div>
+          
+          <!-- Bone Selector Dropdown -->
+          <select id="explore-select" onchange="handleExploreSelect(this.value)" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 font-medium">
+            <option value="">-- Kies een bot uit de 21 VWO botten --</option>
+          </select>
+
+          <!-- Detail Card Display -->
+          <div id="explore-card" class="bg-slate-950/80 border border-slate-800 rounded-xl p-5 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 id="explore-bone-title" class="text-2xl font-extrabold text-[#00f0b5]">Selecteer een bot</h3>
+                <span id="explore-bone-category" class="inline-block px-2 py-0.5 mt-1 text-[11px] font-semibold bg-slate-800 text-slate-300 rounded border border-slate-700">Categorie</span>
+              </div>
+              <span id="explore-bone-latin" class="text-xs font-mono text-slate-400 italic">...</span>
+            </div>
+            
+            <div class="space-y-3 text-sm text-slate-300">
+              <div>
+                <strong class="text-slate-100 block text-xs uppercase tracking-wider text-slate-400 mb-1">Locatie & Functie:</strong>
+                <p id="explore-bone-desc" class="text-slate-300">Klik op een onderdeel op de svg-tekening om anatomische details te bekijken.</p>
+              </div>
+              <div class="pt-2 border-t border-slate-800/60">
+                <strong class="text-amber-400 block text-xs uppercase tracking-wider mb-1">Geheugensteun / Onthoudtip:</strong>
+                <p id="explore-bone-tip" class="text-slate-400 italic">Selecteer een bot om de biologietip te lezen.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 21 Bones Quick Grid Buttons -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">Alle 21 VWO Botten Snelkeuze</h3>
+          <div id="explore-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // Full dataset of 21 VWO Biology bones with Latin names, categories, region zoom views, descriptions & tips
+    const BONES_DATA = [
+      {
+        id: 'schedel',
+        name: 'Schedel',
+        latin: 'Cranium',
+        category: 'Hoofd',
+        region: 'hoofd',
+        viewBox: '130 10 140 180',
+        desc: 'Beschermt de hersenen en vormt de structuur van het gezicht.',
+        tip: 'Vormt de doos om je hersenen. Bestaat bij volwassenen uit vergroeide schedelbeenderen.'
+      },
+      {
+        id: 'halswervels',
+        name: 'Halswervels',
+        latin: 'Vertebrae cervicales (C1-C7)',
+        category: 'Wervelkolom',
+        region: 'hoofd',
+        viewBox: '140 100 120 120',
+        desc: 'De bovenste 7 wervels van de wervelkolom die het hoofd ondersteunen en laten draaien.',
+        tip: 'Eettijdenregel: Ontbijten om 7 uur -> 7 Halswervels (C1 t/m C7).'
+      },
+      {
+        id: 'sleutelbeen',
+        name: 'Sleutelbeen',
+        latin: 'Clavicula',
+        category: 'Schoudergordel',
+        region: 'borstkas',
+        viewBox: '110 140 180 120',
+        desc: 'Verbindt het borstbeen met het schouderblad en stabiliseert de arm.',
+        tip: 'Sleutelbeen is het S-vormige bot dat als sleutel tussen je borstkas en schouder ligt.'
+      },
+      {
+        id: 'schouderblad',
+        name: 'Schouderblad',
+        latin: 'Scapula',
+        category: 'Schoudergordel',
+        region: 'borstkas',
+        viewBox: '100 150 200 140',
+        desc: 'Plat driehoekig bot aan de rugzijde dat spieraanhechting biedt voor de arm.',
+        tip: 'Platte vleugels op je rug. Biedt grote kom voor de kogel van de opperarm.'
+      },
+      {
+        id: 'borstwervels',
+        name: 'Borstwervels',
+        latin: 'Vertebrae thoracicae (T1-T12)',
+        category: 'Wervelkolom',
+        region: 'wervelkolom',
+        viewBox: '140 160 120 150',
+        desc: '12 wervels waaraan de ribben zijn bevestigd.',
+        tip: 'Eettijdenregel: Lunchen om 12 uur -> 12 Borstwervels (T1 t/m T12).'
+      },
+      {
+        id: 'ribben',
+        name: 'Ribben',
+        latin: 'Costae',
+        category: 'Borstkas',
+        region: 'borstkas',
+        viewBox: '100 160 200 140',
+        desc: 'Beschermen de hart en longen en helpen bij de ademhaling.',
+        tip: 'Vormen samen met het borstbeen de borstkas (borstkas = ribben + borstbeen).'
+      },
+      {
+        id: 'borstbeen',
+        name: 'Borstbeen',
+        latin: 'Sternum',
+        category: 'Borstkas',
+        region: 'borstkas',
+        viewBox: '140 160 120 140',
+        desc: 'Plat bot aan de voorzijde van de borstkas waar de ribben aan hechten.',
+        tip: 'Ligt precies in het midden van je borstkas (sternum).'
+      },
+      {
+        id: 'lendewervels',
+        name: 'Lendewervels',
+        latin: 'Vertebrae lumbales (L1-L5)',
+        category: 'Wervelkolom',
+        region: 'wervelkolom',
+        viewBox: '140 250 120 120',
+        desc: '5 stevige, dikke wervels in de onderrug die het lichaamsgewicht dragen.',
+        tip: 'Eettijdenregel: Avondeten om 5 uur -> 5 Lendewervels (L1 t/m L5).'
+      },
+      {
+        id: 'heupbeen',
+        name: 'Heupbeen',
+        latin: 'Os coxae',
+        category: 'Bekkengordel',
+        region: 'bekkenbeen',
+        viewBox: '110 300 180 140',
+        desc: 'Vormt samen met het heiligbeen het bekken en verbindt de benen met de romp.',
+        tip: 'Grote stevige komstructuur in de heup die je kunt voelen aan je zijkant.'
+      },
+      {
+        id: 'heiligbeen',
+        name: 'Heiligbeen',
+        latin: 'Os sacrum',
+        category: 'Wervelkolom / Bekken',
+        region: 'bekkenbeen',
+        viewBox: '140 310 120 120',
+        desc: 'Driehoekig bot gevormd uit 5 samengesmolten heiligbeenwervels.',
+        tip: 'Ligt midden in het bekken tussen de twee heupbeenderen.'
+      },
+      {
+        id: 'staartbeen',
+        name: 'Staartbeen',
+        latin: 'Os coccygis',
+        category: 'Wervelkolom',
+        region: 'bekkenbeen',
+        viewBox: '150 360 100 80',
+        desc: 'Het onderste puntje van de wervelkolom, gevormd uit 3 tot 5 kleine wervels.',
+        tip: 'Het restant van de staart uit de evolutie, onderaan het heiligbeen.'
+      },
+      {
+        id: 'opperarmbeen',
+        name: 'Opperarmbeen',
+        latin: 'Humerus',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '80 170 240 140',
+        desc: 'Het lange pijpbeen van de bovenarm, van schouder tot elleboog.',
+        tip: 'Loopt in je BOVENarm (humor = opperarmbeen grappig knobbeltje).'
+      },
+      {
+        id: 'spaakbeen',
+        name: 'Spaakbeen',
+        latin: 'Radius',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '70 270 260 120',
+        desc: 'Onderarmbot aan de zijde van de duim. Laten draaien van de hand mogelijk.',
+        tip: 'Spaakbeen aan de DUIMzijde! Denk aan het stuur / spaken vastpakken met je duimen.'
+      },
+      {
+        id: 'ellepijp',
+        name: 'Ellepijp',
+        latin: 'Ulna',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '70 270 260 120',
+        desc: 'Onderarmbot aan de zijde van de pink. Vormt de punt van de elleboog.',
+        tip: 'Ellepijp zit aan de PINKzijde! Vormt met de punt de harde elleboog.'
+      },
+      {
+        id: 'handwortelbeentjes',
+        name: 'Handwortelbeentjes',
+        latin: 'Ossa carpi',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '60 340 280 80',
+        desc: '8 kleine botjes in de pols die flexibiliteit aan de hand geven.',
+        tip: 'Zitten in de pols bij de wortel van je hand.'
+      },
+      {
+        id: 'middenhandsbeentjes',
+        name: 'Middenhandsbeentjes',
+        latin: 'Ossa metacarpi',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '50 350 300 90',
+        desc: '5 pijpbeentjes in de handpalm die de pols met de vingers verbinden.',
+        tip: 'Vormen de structuur van je handpalm.'
+      },
+      {
+        id: 'vingerkootjes',
+        name: 'Vingerkootjes',
+        latin: 'Phalanges manus',
+        category: 'Bovenste ledematen',
+        region: 'armhand',
+        viewBox: '40 370 320 100',
+        desc: 'Botjes van de vingers (duim heeft 2, de overige vingers 3 kootjes).',
+        tip: 'De losse beweeglijke kootjes van je 5 vingers.'
+      },
+      {
+        id: 'dijbeen',
+        name: 'Dijbeen',
+        latin: 'Femur',
+        category: 'Onderste ledematen',
+        region: 'bekkenbeen',
+        viewBox: '110 380 180 180',
+        desc: 'Het langste en sterkste bot in het menselijk lichaam, in het bovenbeen.',
+        tip: 'Femur is het langste, zwaarste pijpbeen in je bovenbeen.'
+      },
+      {
+        id: 'knieschijf',
+        name: 'Knieschijf',
+        latin: 'Patella',
+        category: 'Onderste ledematen',
+        region: 'bekkenbeen',
+        viewBox: '120 520 160 60',
+        desc: 'Sesambeen voor de knie die de pees van de bovenbeenspier beschermt.',
+        tip: 'Het losse ronde schijfje midden voor je kniegewricht.'
+      },
+      {
+        id: 'scheenbeen',
+        name: 'Scheenbeen',
+        latin: 'Tibia',
+        category: 'Onderste ledematen',
+        region: 'bekkenbeen',
+        viewBox: '110 540 180 180',
+        desc: 'Het grote, dragende bot aan de binnenkant van het onderbeen.',
+        tip: 'Tibia = het dikke bot aan de binnenkant dat SHINET op je scheen.'
+      },
+      {
+        id: 'kuitbeen',
+        name: 'Kuitbeen',
+        latin: 'Fibula',
+        category: 'Onderste ledematen',
+        region: 'bekkenbeen',
+        viewBox: '110 540 180 180',
+        desc: 'Het dunnere bot aan de buitenkant van het onderbeen.',
+        tip: 'Fibula = het dunnere bot aan de buitenkant (kuitzijde).'
+      }
+    ];
+
+    // State variables
+    let activeTab = 'quiz';
+    let quizMode = 'adaptive'; // 'adaptive' or 'random'
+    let soundEnabled = true;
+    
+    // Quiz Level 1 state
+    let currentQuizTarget = null;
+    let quizLives = 3;
+    let quizStreak = 0;
+    let masteredBones = new Set();
+    let mistakeBones = new Set();
+    let isQuestionAnswered = false;
+    let questionCounter = 1;
+
+    // Pinpoint Level 2 state
+    let unlockedLevel2 = false;
+    let level2Mastered = new Set();
+    let currentPinpointTarget = null;
+
+    // Time Attack Level 3 state
+    let unlockedLevel3 = false;
+    let isTimeAttackActive = false;
+    let timeAttackScore = 0;
+    let timeAttackHighScore = 0;
+    let timeAttackTime = 60;
+    let timeAttackTimer = null;
+    let timeAttackTarget = null;
+    let timeAttackType = 'quiz'; // 'quiz' of 'pinpoint'
+
+    // SVG Zoom State
+    const DEFAULT_VIEWBOX = '0 0 400 780';
+    let currentViewBox = DEFAULT_VIEWBOX;
+
+    // Sound Generator with Web Audio API
+    function playTone(type) {
+      if (!soundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+          osc.frequency.exponentialRampToValueAtTime(130.81, ctx.currentTime + 0.2); // C3
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'click') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          gain.gain.setValueAtTime(0.05, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.05);
+        } else if (type === 'win') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.45);
+        }
+      } catch (e) {
+        // Audio fallback silence
+      }
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const statusText = soundEnabled ? 'AAN' : 'UIT';
+      const icon = soundEnabled ? '🔊' : '🔇';
+
+      document.getElementById('sound-status').innerText = statusText;
+      document.getElementById('sound-icon').innerText = icon;
+      document.getElementById('sound-toggle-btn').innerText = icon;
+
+      const statusEl = document.getElementById('sound-status');
+      if (soundEnabled) {
+        statusEl.className = "text-emerald-400";
+      } else {
+        statusEl.className = "text-rose-400";
+      }
+      playTone('click');
+    }
+
+    // Tab Navigation
+    function switchTab(tabName) {
+      playTone('click');
+      activeTab = tabName;
+
+      // Update Nav Buttons styling
+      const tabs = ['quiz', 'pinpoint', 'timeattack', 'explore'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const content = document.getElementById(`tab-content-${t}`);
+        if (!btn || !content) return;
+
+        if (t === tabName) {
+          btn.className = "flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 font-bold shadow whitespace-nowrap";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 px-3 py-2 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 text-slate-300 hover:text-white font-semibold whitespace-nowrap";
+          content.classList.add('hidden');
+        }
+      });
+
+      // Special handling for Level 2 locked status
+      if (tabName === 'pinpoint') {
+        const lockedCard = document.getElementById('level2-locked-card');
+        const activeCard = document.getElementById('level2-active-card');
+        if (!unlockedLevel2) {
+          lockedCard.classList.remove('hidden');
+          activeCard.classList.add('hidden');
+        } else {
+          lockedCard.classList.add('hidden');
+          activeCard.classList.remove('hidden');
+          if (!currentPinpointTarget) {
+            setupNextPinpoint();
+          }
+        }
+      }
+
+      // Special handling for Level 3 locked status
+      if (tabName === 'timeattack') {
+        const lockedCard = document.getElementById('level3-locked-card');
+        const startCard = document.getElementById('level3-start-card');
+        const activeCard = document.getElementById('level3-active-card');
+        const resultCard = document.getElementById('level3-result-card');
+
+        if (!unlockedLevel3) {
+          lockedCard.classList.remove('hidden');
+          startCard.classList.add('hidden');
+          activeCard.classList.add('hidden');
+          resultCard.classList.add('hidden');
+        } else if (!isTimeAttackActive && document.getElementById('level3-result-card').classList.contains('hidden')) {
+          lockedCard.classList.add('hidden');
+          startCard.classList.remove('hidden');
+          activeCard.classList.add('hidden');
+        }
+      }
+
+      // Stop Level 3 timer automatically if the user switches away
+      if (tabName !== 'timeattack' && isTimeAttackActive) {
+        endTimeAttack();
+      }
+
+      // Reset zoom if switching away
+      if (tabName === 'explore') {
+        clearHighlights();
+      } else if (tabName === 'quiz' && currentQuizTarget) {
+        highlightBone(currentQuizTarget.id);
+      }
+    }
+
+    // SVG Zoom & Camera Focus
+    function setSvgViewBox(viewBoxStr) {
+      const svg = document.getElementById('skeleton-svg');
+      svg.setAttribute('viewBox', viewBoxStr);
+      currentViewBox = viewBoxStr;
+    }
+
+    function resetZoom() {
+      playTone('click');
+      setSvgViewBox(DEFAULT_VIEWBOX);
+    }
+
+    function manualZoom(factor) {
+      playTone('click');
+      const svg = document.getElementById('skeleton-svg');
+      const parts = currentViewBox.split(' ').map(Number);
+      let [x, y, w, h] = parts;
+
+      const newW = w * factor;
+      const newH = h * factor;
+      const newX = x + (w - newW) / 2;
+      const newY = y + (h - newH) / 2;
+
+      setSvgViewBox(`${newX} ${newY} ${newW} ${newH}`);
+    }
+
+    function zoomToRegion(region) {
+      playTone('click');
+      let viewBox = DEFAULT_VIEWBOX;
+      switch (region) {
+        case 'hoofd': viewBox = '120 20 160 180'; break;
+        case 'borstkas': viewBox = '100 140 200 160'; break;
+        case 'wervelkolom': viewBox = '130 130 140 280'; break;
+        case 'armhand': viewBox = '40 170 320 280'; break;
+        case 'bekkenbeen': viewBox = '100 310 200 420'; break;
+      }
+      setSvgViewBox(viewBox);
+    }
+
+    // Bone Visual Highlights on SVG
+    function clearHighlights() {
+      document.querySelectorAll('.bone').forEach(b => {
+        b.classList.remove('highlighted', 'correct-flash', 'wrong-flash');
+      });
+    }
+
+    function highlightBone(boneId, flashClass = 'highlighted') {
+      clearHighlights();
+      const group = document.getElementById(`bone-${boneId}`);
+      if (group) {
+        group.querySelectorAll('.bone').forEach(b => {
+          b.classList.add(flashClass);
+        });
+      }
+    }
+
+    function flashBone(boneId, statusClass) {
+      const group = document.getElementById(`bone-${boneId}`);
+      if (group) {
+        group.querySelectorAll('.bone').forEach(b => {
+          b.classList.remove('highlighted');
+          b.classList.add(statusClass);
+        });
+        setTimeout(() => {
+          group.querySelectorAll('.bone').forEach(b => {
+            b.classList.remove(statusClass);
+          });
+        }, 1200);
+      }
+    }
+
+    // LEVEL 1: QUIZ GAME LOGIC
+    function setQuizMode(mode) {
+      playTone('click');
+      quizMode = mode;
+      
+      const adaptiveBtn = document.getElementById('mode-btn-adaptive');
+      const randomBtn = document.getElementById('mode-btn-random');
+
+      if (mode === 'adaptive') {
+        adaptiveBtn.className = "px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 shadow";
+        randomBtn.className = "px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+      } else {
+        randomBtn.className = "px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950 shadow";
+        adaptiveBtn.className = "px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+      }
+    }
+
+    function updateQuizScoreboard() {
+      document.getElementById('quiz-mastered-count').innerText = masteredBones.size;
+      document.getElementById('quiz-streak').innerText = quizStreak;
+      document.getElementById('quiz-mistakes-count').innerText = mistakeBones.size;
+
+      // Render Lives Skulls
+      let skullsHtml = '';
+      for (let i = 0; i < 3; i++) {
+        if (i < quizLives) {
+          skullsHtml += '<span>💀</span>';
+        } else {
+          skullsHtml += '<span class="opacity-20 grayscale">💀</span>';
+        }
+      }
+      document.getElementById('quiz-lives').innerHTML = skullsHtml;
+    }
+
+    function setupNextQuizQuestion() {
+      if (quizLives <= 0) return;
+
+      // Check level 1 victory condition
+      if (masteredBones.size >= BONES_DATA.length) {
+        showQuizVictory();
+        return;
+      }
+
+      isQuestionAnswered = false;
+      document.getElementById('quiz-feedback').classList.add('hidden');
+      document.getElementById('question-number').innerText = questionCounter;
+
+      // Select Target Bone
+      let candidate = null;
+
+      // Adaptive mode prioritizes mistake list first, then unmastered
+      if (quizMode === 'adaptive' && mistakeBones.size > 0 && Math.random() < 0.65) {
+        const mistakeArray = Array.from(mistakeBones);
+        const randomMistakeId = mistakeArray[Math.floor(Math.random() * mistakeArray.length)];
+        candidate = BONES_DATA.find(b => b.id === randomMistakeId);
+        document.getElementById('repeat-notice-badge').classList.remove('hidden');
+        document.getElementById('repeat-notice-badge').classList.add('flex');
+      } else {
+        document.getElementById('repeat-notice-badge').classList.add('hidden');
+        document.getElementById('repeat-notice-badge').classList.remove('flex');
+        
+        const unmastered = BONES_DATA.filter(b => !masteredBones.has(b.id));
+        if (unmastered.length > 0) {
+          candidate = unmastered[Math.floor(Math.random() * unmastered.length)];
+        } else {
+          candidate = BONES_DATA[Math.floor(Math.random() * BONES_DATA.length)];
+        }
+      }
+
+      currentQuizTarget = candidate;
+
+      // Zoom to Target Bone
+      if (currentQuizTarget.region) {
+        zoomToRegion(currentQuizTarget.region);
+      }
+      highlightBone(currentQuizTarget.id);
+
+      // Generate 4 Multiple Choice Options
+      const options = [currentQuizTarget];
+      while (options.length < 4) {
+        const randomBone = BONES_DATA[Math.floor(Math.random() * BONES_DATA.length)];
+        if (!options.some(o => o.id === randomBone.id)) {
+          options.push(randomBone);
+        }
+      }
+
+      // Shuffle options
+      options.sort(() => Math.random() - 0.5);
+
+      // Render Options Buttons
+      const optionsContainer = document.getElementById('quiz-options');
+      optionsContainer.innerHTML = '';
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.onclick = () => handleQuizOptionClick(opt, btn);
+        btn.className = "w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800/90 border border-slate-800 text-left text-sm font-semibold text-slate-200 transition-all duration-150 flex items-center justify-between group shadow-sm";
+        btn.innerHTML = `
+          <span>${opt.name}</span>
+          <span class="text-xs text-slate-500 font-mono italic group-hover:text-slate-400">${opt.latin}</span>
+        `;
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleQuizOptionClick(selectedOpt, btnElement) {
+      if (isQuestionAnswered || quizLives <= 0) return;
+      isQuestionAnswered = true;
+
+      const feedbackEl = document.getElementById('quiz-feedback');
+      const iconEl = document.getElementById('feedback-icon');
+      const textEl = document.getElementById('feedback-text');
+
+      feedbackEl.classList.remove('hidden');
+
+      if (selectedOpt.id === currentQuizTarget.id) {
+        // CORRECT ANSWER
+        playTone('correct');
+        flashBone(currentQuizTarget.id, 'correct-flash');
+        
+        masteredBones.add(currentQuizTarget.id);
+        mistakeBones.delete(currentQuizTarget.id);
+        quizStreak++;
+
+        btnElement.className = "w-full p-4 rounded-xl bg-emerald-500/20 border-2 border-emerald-500 text-left text-sm font-bold text-emerald-300 flex items-center justify-between shadow";
+
+        feedbackEl.className = "p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-sm font-medium flex items-center gap-3";
+        iconEl.className = "w-6 h-6 rounded-full bg-emerald-400 flex items-center justify-center shrink-0 font-bold text-slate-950";
+        iconEl.innerText = "✓";
+        textEl.innerHTML = `<strong>Uitstekend!</strong> Dat is inderdaad het/de <strong>${currentQuizTarget.name}</strong> (${currentQuizTarget.latin}).`;
+
+      } else {
+        // WRONG ANSWER
+        playTone('wrong');
+        flashBone(currentQuizTarget.id, 'wrong-flash');
+
+        quizLives--;
+        quizStreak = 0;
+        mistakeBones.add(currentQuizTarget.id);
+
+        btnElement.className = "w-full p-4 rounded-xl bg-rose-500/20 border-2 border-rose-500 text-left text-sm font-bold text-rose-300 flex items-center justify-between shadow";
+
+        feedbackEl.className = "p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 text-sm font-medium flex items-center gap-3";
+        iconEl.className = "w-6 h-6 rounded-full bg-rose-500 flex items-center justify-center shrink-0 font-bold text-white";
+        iconEl.innerText = "✕";
+        textEl.innerHTML = `<strong>Helaas!</strong> Dit was het/de <strong>${currentQuizTarget.name}</strong> (${currentQuizTarget.latin}). <br><span class="text-xs text-rose-300/80 italic">${currentQuizTarget.tip}</span>`;
+      }
+
+      updateQuizScoreboard();
+
+      if (quizLives <= 0) {
+        setTimeout(showGameOver, 1500);
+      } else {
+        questionCounter++;
+        setTimeout(setupNextQuizQuestion, 2000);
+      }
+    }
+
+    function showGameOver() {
+      document.getElementById('quiz-question-box').classList.add('hidden');
+      document.getElementById('quiz-gameover-card').classList.remove('hidden');
+    }
+
+    function showQuizVictory() {
+      unlockedLevel2 = true;
+      document.getElementById('level2-lock-icon').innerText = '✅';
+      
+      document.getElementById('quiz-question-box').classList.add('hidden');
+      document.getElementById('quiz-completion-card').classList.remove('hidden');
+      playTone('win');
+    }
+
+    function restartQuiz() {
+      playTone('click');
+      quizLives = 3;
+      quizStreak = 0;
+      questionCounter = 1;
+      masteredBones.clear();
+      mistakeBones.clear();
+
+      document.getElementById('quiz-gameover-card').classList.add('hidden');
+      document.getElementById('quiz-completion-card').classList.add('hidden');
+      document.getElementById('quiz-question-box').classList.remove('hidden');
+
+      updateQuizScoreboard();
+      setupNextQuizQuestion();
+    }
+
+    function unlockAndStartLevel2() {
+      unlockedLevel2 = true;
+      switchTab('pinpoint');
+    }
+
+    // LEVEL 2: PINPOINT (AANWIJS) GAME LOGIC
+    function setupNextPinpoint() {
+      if (level2Mastered.size >= BONES_DATA.length) {
+        showLevel2Victory();
+        return;
+      }
+
+      clearHighlights();
+      resetZoom();
+
+      const remaining = BONES_DATA.filter(b => !level2Mastered.has(b.id));
+      currentPinpointTarget = remaining[Math.floor(Math.random() * remaining.length)];
+
+      document.getElementById('pinpoint-target-name').innerText = currentPinpointTarget.name;
+      document.getElementById('pinpoint-found-count').innerText = level2Mastered.size;
+      document.getElementById('pinpoint-feedback').classList.add('hidden');
+    }
+
+    function handleLevel2Click(boneId) {
+      if (!currentPinpointTarget || activeTab !== 'pinpoint') return;
+
+      const feedbackEl = document.getElementById('pinpoint-feedback');
+      feedbackEl.classList.remove('hidden');
+
+      if (boneId === currentPinpointTarget.id) {
+        playTone('correct');
+        flashBone(boneId, 'correct-flash');
+
+        level2Mastered.add(boneId);
+        document.getElementById('pinpoint-found-count').innerText = level2Mastered.size;
+
+        feedbackEl.className = "p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-center text-xs";
+        feedbackEl.innerText = `Goed zo! Dat is inderdaad het/de ${currentPinpointTarget.name}!`;
+
+        setTimeout(setupNextPinpoint, 1600);
+      } else {
+        playTone('wrong');
+        flashBone(boneId, 'wrong-flash');
+
+        const clickedBone = BONES_DATA.find(b => b.id === boneId);
+        const clickedName = clickedBone ? clickedBone.name : 'een ander bot';
+
+        feedbackEl.className = "p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-center text-xs";
+        feedbackEl.innerText = `Oeps! Dat was het/de ${clickedName}. Zoek het/de ${currentPinpointTarget.name}!`;
+      }
+    }
+
+    function showLevel2Victory() {
+      unlockedLevel3 = true;
+      document.getElementById('level3-lock-icon').innerText = '✅';
+
+      document.getElementById('level2-active-card').classList.add('hidden');
+      document.getElementById('level2-completion-card').classList.remove('hidden');
+      playTone('win');
+    }
+
+    function restartLevel2() {
+      level2Mastered.clear();
+      document.getElementById('level2-completion-card').classList.add('hidden');
+      document.getElementById('level2-active-card').classList.remove('hidden');
+      setupNextPinpoint();
+    }
+
+    // LEVEL 3: TIJDRACE LOGIC (MIXED MODE)
+    function unlockAndStartLevel3() {
+      unlockedLevel3 = true;
+      document.getElementById('level3-lock-icon').innerText = '✅';
+      switchTab('timeattack');
+    }
+
+    function startTimeAttack() {
+      playTone('click');
+      isTimeAttackActive = true;
+      timeAttackScore = 0;
+      timeAttackTime = 60;
+
+      document.getElementById('level3-start-card').classList.add('hidden');
+      document.getElementById('level3-result-card').classList.add('hidden');
+      document.getElementById('level3-active-card').classList.remove('hidden');
+
+      document.getElementById('l3-score').innerText = timeAttackScore;
+      document.getElementById('l3-time').innerText = timeAttackTime;
+
+      timeAttackTimer = setInterval(() => {
+        timeAttackTime--;
+        document.getElementById('l3-time').innerText = timeAttackTime;
+        if (timeAttackTime <= 0) {
+          endTimeAttack();
+        }
+      }, 1000);
+
+      setupNextTimeAttack();
+    }
+
+    function setupNextTimeAttack() {
+      if (!isTimeAttackActive) return;
+      document.getElementById('l3-feedback').classList.add('hidden');
+      clearHighlights();
+
+      // Willekeurig kiezen tussen Quiz of Aanwijzen (50/50 kans)
+      timeAttackType = Math.random() > 0.5 ? 'quiz' : 'pinpoint';
+      timeAttackTarget = BONES_DATA[Math.floor(Math.random() * BONES_DATA.length)];
+
+      if (timeAttackType === 'quiz') {
+        // Quiz UI: Zoom + Groen bot + 4 keuzes
+        if (timeAttackTarget.region) zoomToRegion(timeAttackTarget.region);
+        highlightBone(timeAttackTarget.id);
+
+        document.getElementById('l3-prompt').innerHTML = `Welk bot is <span class="text-[#00f0b5] underline">groen</span> gekleurd?`;
+        document.getElementById('l3-options-container').classList.remove('hidden');
+
+        const options = [timeAttackTarget];
+        while (options.length < 4) {
+          const randomBone = BONES_DATA[Math.floor(Math.random() * BONES_DATA.length)];
+          if (!options.some(o => o.id === randomBone.id)) options.push(randomBone);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        const optionsContainer = document.getElementById('l3-options');
+        optionsContainer.innerHTML = '';
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = "w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800/90 border border-slate-800 text-left text-sm font-semibold text-slate-200 transition group shadow-sm flex items-center justify-between";
+          btn.innerHTML = `<span>${opt.name}</span> <span class="text-[10px] text-slate-500 font-mono italic">${opt.latin}</span>`;
+          btn.onclick = () => processTimeAttackAnswer(opt.id === timeAttackTarget.id, opt.id, btn);
+          optionsContainer.appendChild(btn);
+        });
+
+      } else {
+        // Pinpoint UI: Geen zoom + Vraag + Geen knoppen
+        resetZoom();
+        document.getElementById('l3-prompt').innerHTML = `Klik direct op het skelet: <br><span class="text-2xl text-fuchsia-400 font-black mt-1 inline-block">${timeAttackTarget.name}</span>`;
+        document.getElementById('l3-options-container').classList.add('hidden');
+      }
+    }
+
+    function handleTimeAttackSvgClick(boneId) {
+      if (!isTimeAttackActive || timeAttackType !== 'pinpoint') return;
+      processTimeAttackAnswer(boneId === timeAttackTarget.id, boneId);
+    }
+
+    function processTimeAttackAnswer(isCorrect, clickedBoneId, btnElement = null) {
+      const feedbackEl = document.getElementById('l3-feedback');
+      feedbackEl.classList.remove('hidden');
+
+      if (isCorrect) {
+        playTone('correct');
+        flashBone(timeAttackTarget.id, 'correct-flash');
+        timeAttackScore++;
+        document.getElementById('l3-score').innerText = timeAttackScore;
+        feedbackEl.className = "p-3 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-center text-sm";
+        feedbackEl.innerText = "Correct! +1";
+
+        if (btnElement) btnElement.classList.add('border-emerald-500', 'bg-emerald-500/20');
+      } else {
+        playTone('wrong');
+        flashBone(clickedBoneId, 'wrong-flash');
+        if (timeAttackType === 'quiz') flashBone(timeAttackTarget.id, 'correct-flash'); 
+
+        feedbackEl.className = "p-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold text-center text-sm";
+        feedbackEl.innerText = `Fout! Het was de ${timeAttackTarget.name}`;
+
+        if (btnElement) btnElement.classList.add('border-rose-500', 'bg-rose-500/20');
+      }
+
+      // Snelle transitie naar de volgende vraag
+      setTimeout(() => {
+        if (isTimeAttackActive) setupNextTimeAttack();
+      }, 700);
+    }
+
+    function endTimeAttack() {
+      clearInterval(timeAttackTimer);
+      isTimeAttackActive = false;
+      playTone('win');
+      clearHighlights();
+
+      if (timeAttackScore > timeAttackHighScore) {
+        timeAttackHighScore = timeAttackScore;
+      }
+
+      document.getElementById('level3-active-card').classList.add('hidden');
+      document.getElementById('level3-result-card').classList.remove('hidden');
+      document.getElementById('l3-final-score').innerText = timeAttackScore;
+      document.getElementById('l3-high-score').innerText = timeAttackHighScore;
+    }
+
+    // TAB 3: EXPLORE & INSPECT BONES
+    function renderExploreTab() {
+      const selectEl = document.getElementById('explore-select');
+      const gridEl = document.getElementById('explore-grid');
+
+      selectEl.innerHTML = '<option value="">-- Kies een bot uit de 21 VWO botten --</option>';
+      gridEl.innerHTML = '';
+
+      BONES_DATA.forEach(bone => {
+        // Dropdown option
+        const opt = document.createElement('option');
+        opt.value = bone.id;
+        opt.innerText = `${bone.name} (${bone.latin})`;
+        selectEl.appendChild(opt);
+
+        // Grid Button
+        const btn = document.createElement('button');
+        btn.onclick = () => handleExploreSelect(bone.id);
+        btn.className = "p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs font-semibold text-slate-200 transition truncate";
+        btn.innerText = bone.name;
+        gridEl.appendChild(btn);
+      });
+    }
+
+    function handleExploreSelect(boneId) {
+      if (!boneId) return;
+      playTone('click');
+
+      const bone = BONES_DATA.find(b => b.id === boneId);
+      if (!bone) return;
+
+      document.getElementById('explore-select').value = boneId;
+      document.getElementById('explore-bone-title').innerText = bone.name;
+      document.getElementById('explore-bone-category').innerText = bone.category;
+      document.getElementById('explore-bone-latin').innerText = bone.latin;
+      document.getElementById('explore-bone-desc').innerText = bone.desc;
+      document.getElementById('explore-bone-tip').innerText = bone.tip;
+
+      if (bone.region) {
+        zoomToRegion(bone.region);
+      }
+      highlightBone(bone.id);
+    }
+
+    // SVG Global Bone Click Handler
+    function handleBoneClick(boneId) {
+      if (activeTab === 'explore') {
+        handleExploreSelect(boneId);
+      } else if (activeTab === 'timeattack' && isTimeAttackActive) {
+        // Speciale SVG click routing voor Level 3
+        if (timeAttackType === 'pinpoint') {
+          handleTimeAttackSvgClick(boneId);
+        } else if (timeAttackType === 'quiz') {
+          const clickedBone = BONES_DATA.find(b => b.id === boneId);
+          if (clickedBone) {
+            const matchingOptionBtn = Array.from(document.querySelectorAll('#l3-options button'))
+              .find(btn => btn.innerText.includes(clickedBone.name));
+            if (matchingOptionBtn) {
+              processTimeAttackAnswer(clickedBone.id === timeAttackTarget.id, clickedBone.id, matchingOptionBtn);
+            }
+          }
+        }
+      } else if (activeTab === 'pinpoint' && unlockedLevel2) {
+        handleLevel2Click(boneId);
+      } else if (activeTab === 'quiz' && currentQuizTarget) {
+        // SVG click option in Quiz
+        const clickedBone = BONES_DATA.find(b => b.id === boneId);
+        if (clickedBone) {
+          const matchingOptionBtn = Array.from(document.querySelectorAll('#quiz-options button'))
+            .find(btn => btn.innerText.includes(clickedBone.name));
+          if (matchingOptionBtn) {
+            handleQuizOptionClick(clickedBone, matchingOptionBtn);
+          }
+        }
+      }
+    }
+
+    // Initialize App
+    window.onload = function() {
+      renderExploreTab();
+      updateQuizScoreboard();
+      setupNextQuizQuestion();
+    };
+  </script>
+</body>
+</html>
