@@ -1,0 +1,67 @@
+body {
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* SVG Bone styling */
+.bone {
+  fill: #cbd5e1;
+  stroke: #334155;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  cursor: pointer;
+  transition: fill 0.2s ease, stroke 0.2s ease, stroke-width 0.2s ease, transform 0.2s ease;
+  filter: none !important;
+}
+
+.bone:hover {
+  fill: #94a3b8;
+  stroke: #0284c7;
+  stroke-width: 2px;
+}
+
+/* Target / Highlighted Bone Fill */
+.bone.highlighted {
+  fill: #00f0b5 !important;
+  stroke: #0284c7 !important;
+  stroke-width: 2.5px !important;
+  filter: none !important;
+}
+
+/* Correct Pick Fill */
+.bone.correct-flash {
+  fill: #10b981 !important;
+  stroke: #047857 !important;
+  stroke-width: 3px !important;
+}
+
+/* Wrong Pick Fill */
+.bone.wrong-flash {
+  fill: #f43f5e !important;
+  stroke: #be123c !important;
+  stroke-width: 3px !important;
+}
+
+/* Animated viewBox canvas */
+#skeleton-svg {
+  transition: viewBox 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: viewBox;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
