@@ -193,7 +193,7 @@ const BONES_DATA = [
 
 // State variables
 let activeTab = 'quiz';
-let quizMode = 'adaptive'; // 'adaptive' or 'random'
+let quizMode = 'adaptive';
 let soundEnabled = true;
 
 // Quiz Level 1 state
@@ -207,26 +207,26 @@ let questionCounter = 1;
 
 // Pinpoint Level 2 state
 let unlockedLevel2 = false;
-let level2Lives = 3; // Levens voor level 2
+let level2Lives = 3;
 let level2Mastered = new Set();
 let currentPinpointTarget = null;
 
 // Time Attack Level 3 state
 let unlockedLevel3 = false;
-let level3Lives = 3; // Levens voor level 3
+let level3Lives = 3;
 let isTimeAttackActive = false;
 let timeAttackScore = 0;
 let timeAttackHighScore = 0;
 let timeAttackTime = 60;
 let timeAttackTimer = null;
 let timeAttackTarget = null;
-let timeAttackType = 'quiz'; // 'quiz' of 'pinpoint'
+let timeAttackType = 'quiz';
 
 // SVG Zoom State
 const DEFAULT_VIEWBOX = '0 0 400 780';
 let currentViewBox = DEFAULT_VIEWBOX;
 
-// Sound Generator with Web Audio API
+// Sound Generator
 function playTone(type) {
   if (!soundEnabled) return;
   try {
@@ -241,16 +241,16 @@ function playTone(type) {
 
     if (type === 'correct') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15);
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.start();
       osc.stop(ctx.currentTime + 0.25);
     } else if (type === 'wrong') {
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
-      osc.frequency.exponentialRampToValueAtTime(130.81, ctx.currentTime + 0.2); // C3
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(130.81, ctx.currentTime + 0.2);
       gain.gain.setValueAtTime(0.2, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc.start();
@@ -271,9 +271,7 @@ function playTone(type) {
       osc.start();
       osc.stop(ctx.currentTime + 0.45);
     }
-  } catch (e) {
-    // Audio fallback silence
-  }
+  } catch (e) {}
 }
 
 function toggleAudio() {
@@ -299,7 +297,6 @@ function switchTab(tabName) {
   playTone('click');
   activeTab = tabName;
 
-  // Update Nav Buttons styling
   const tabs = ['quiz', 'pinpoint', 'timeattack', 'explore'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-btn-${t}`);
@@ -315,7 +312,6 @@ function switchTab(tabName) {
     }
   });
 
-  // Special handling for Level 2 locked status
   if (tabName === 'pinpoint') {
     const lockedCard = document.getElementById('level2-locked-card');
     const activeCard = document.getElementById('level2-active-card');
@@ -340,7 +336,6 @@ function switchTab(tabName) {
     }
   }
 
-  // Special handling for Level 3 locked status
   if (tabName === 'timeattack') {
     const lockedCard = document.getElementById('level3-locked-card');
     const startCard = document.getElementById('level3-start-card');
@@ -359,12 +354,10 @@ function switchTab(tabName) {
     }
   }
 
-  // Stop Level 3 timer automatically if the user switches away
   if (tabName !== 'timeattack' && isTimeAttackActive) {
     endTimeAttack("Tijd gestopt (tab gewisseld)");
   }
 
-  // Reset zoom if switching away
   if (tabName === 'explore') {
     clearHighlights();
   } else if (tabName === 'quiz' && currentQuizTarget) {
@@ -372,7 +365,7 @@ function switchTab(tabName) {
   }
 }
 
-// SVG Zoom & Camera Focus
+// SVG Zoom
 function setSvgViewBox(viewBoxStr) {
   const svg = document.getElementById('skeleton-svg');
   svg.setAttribute('viewBox', viewBoxStr);
@@ -411,7 +404,6 @@ function zoomToRegion(region) {
   setSvgViewBox(viewBox);
 }
 
-// Bone Visual Highlights on SVG
 function clearHighlights() {
   document.querySelectorAll('.bone').forEach(b => {
     b.classList.remove('highlighted', 'correct-flash', 'wrong-flash');
@@ -443,7 +435,7 @@ function flashBone(boneId, statusClass) {
   }
 }
 
-// LEVEL 1: QUIZ GAME LOGIC
+// LEVEL 1 LOGIC
 function setQuizMode(mode) {
   playTone('click');
   quizMode = mode;
@@ -465,7 +457,6 @@ function updateQuizScoreboard() {
   document.getElementById('quiz-streak').innerText = quizStreak;
   document.getElementById('quiz-mistakes-count').innerText = mistakeBones.size;
 
-  // Render Lives Skulls
   let skullsHtml = '';
   for (let i = 0; i < 3; i++) {
     if (i < quizLives) {
@@ -480,7 +471,6 @@ function updateQuizScoreboard() {
 function setupNextQuizQuestion() {
   if (quizLives <= 0) return;
 
-  // Check level 1 victory condition
   if (masteredBones.size >= BONES_DATA.length) {
     showQuizVictory();
     return;
@@ -490,7 +480,6 @@ function setupNextQuizQuestion() {
   document.getElementById('quiz-feedback').classList.add('hidden');
   document.getElementById('question-number').innerText = questionCounter;
 
-  // Select Target Bone
   let candidate = null;
 
   if (quizMode === 'adaptive' && mistakeBones.size > 0 && Math.random() < 0.65) {
@@ -626,7 +615,7 @@ function unlockAndStartLevel2() {
   switchTab('pinpoint');
 }
 
-// LEVEL 2: PINPOINT (AANWIJS) GAME LOGIC (MET LEVENS)
+// LEVEL 2 LOGIC
 function updateLevel2Scoreboard() {
   let skullsHtml = '';
   for (let i = 0; i < 3; i++) {
@@ -688,7 +677,7 @@ function handleLevel2Click(boneId) {
     const clickedName = clickedBone ? clickedBone.name : 'een ander bot';
 
     feedbackEl.className = "p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-center text-xs";
-    feedbackEl.innerText = `Oeps! Dat was het/de ${clickedName}. (-1 Leven)`;
+    feedbackEl.innerText = `Oeps! Dat was het/de ${clickedName}.`;
 
     if (level2Lives <= 0) {
       setTimeout(showLevel2GameOver, 1600);
@@ -713,6 +702,7 @@ function showLevel2Victory() {
 function restartLevel2() {
   level2Lives = 3;
   level2Mastered.clear();
+  currentPinpointTarget = null;
   document.getElementById('level2-completion-card').classList.add('hidden');
   document.getElementById('level2-gameover-card').classList.add('hidden');
   document.getElementById('level2-active-card').classList.remove('hidden');
@@ -720,7 +710,7 @@ function restartLevel2() {
   setupNextPinpoint();
 }
 
-// LEVEL 3: TIJDRACE LOGIC (MET LEVENS)
+// LEVEL 3 LOGIC
 function unlockAndStartLevel3() {
   unlockedLevel3 = true;
   document.getElementById('level3-lock-icon').innerText = '✅';
@@ -834,7 +824,7 @@ function processTimeAttackAnswer(isCorrect, clickedBoneId, btnElement = null) {
     updateLevel3Lives();
 
     feedbackEl.className = "p-3 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold text-center text-sm";
-    feedbackEl.innerText = `Fout! Het was de ${timeAttackTarget.name} (-1 Leven)`;
+    feedbackEl.innerText = `Fout! Het was de ${timeAttackTarget.name}`;
 
     if (btnElement) btnElement.classList.add('border-rose-500', 'bg-rose-500/20');
   }
@@ -867,7 +857,7 @@ function endTimeAttack(reason = "Tijd is om!") {
   document.getElementById('l3-high-score').innerText = timeAttackHighScore;
 }
 
-// TAB 4: EXPLORE & INSPECT BONES
+// TAB 4: EXPLORE
 function renderExploreTab() {
   const selectEl = document.getElementById('explore-select');
   const gridEl = document.getElementById('explore-grid');
@@ -908,7 +898,7 @@ function handleExploreSelect(boneId) {
   highlightBone(bone.id);
 }
 
-// SVG Global Bone Click Handler
+// Global SVG Click
 function handleBoneClick(boneId) {
   if (activeTab === 'explore') {
     handleExploreSelect(boneId);
@@ -939,9 +929,11 @@ function handleBoneClick(boneId) {
   }
 }
 
-// Initialize App
+// Init
 window.onload = function() {
   renderExploreTab();
   updateQuizScoreboard();
+  updateLevel2Scoreboard();
+  updateLevel3Lives();
   setupNextQuizQuestion();
 };
