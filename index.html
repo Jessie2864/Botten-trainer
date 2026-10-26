@@ -450,11 +450,30 @@
               <span class="px-2.5 py-1 rounded-md bg-cyan-500/10 text-cyan-400 font-bold text-xs border border-cyan-500/20">Level 2 Challenge</span>
               <h2 class="text-xl font-extrabold text-white mt-1">Klik op het juiste bot!</h2>
             </div>
-            <div class="text-right">
-              <span class="text-xs text-slate-400 block uppercase font-bold">Level 2 Voortgang</span>
-              <span class="text-xl font-black text-emerald-400">
-                <span id="pinpoint-found-count">0</span> / 21 botten
-              </span>
+            
+            <div class="flex items-center gap-4">
+              <!-- Levens Display Level 2 (NIEUW) -->
+              <div class="text-right">
+                <p class="text-xs uppercase tracking-wider text-rose-400 font-bold flex items-center justify-end gap-1">
+                  💀 Levens
+                </p>
+                <div id="level2-lives" class="text-xl font-bold mt-0.5 tracking-wider flex items-center justify-end gap-1">
+                  <span>💀</span><span>💀</span><span>💀</span>
+                </div>
+              </div>
+
+              <!-- Level 2 Voortgang -->
+              <div class="text-right border-l border-slate-800 pl-4">
+                <span class="text-xs text-slate-400 block uppercase font-bold">Voortgang</span>
+                <span class="text-xl font-black text-emerald-400">
+                  <span id="pinpoint-found-count">0</span> / 21
+                </span>
+              </div>
+
+              <!-- Herstart Knop Level 2 (NIEUW) -->
+              <button onclick="restartLevel2()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition ml-1" title="Herstart Level 2">
+                🔄
+              </button>
             </div>
           </div>
 
@@ -465,6 +484,20 @@
           </div>
 
           <div id="pinpoint-feedback" class="hidden p-3.5 rounded-xl text-xs font-bold text-center transition"></div>
+        </div>
+
+        <!-- Level 2 Game Over Card (NIEUW) -->
+        <div id="level2-gameover-card" class="hidden bg-slate-900 border-2 border-rose-500/60 rounded-2xl p-6 shadow-2xl text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center mx-auto text-rose-400 text-2xl font-bold">
+            💀
+          </div>
+          <div>
+            <h3 class="text-2xl font-extrabold text-rose-400">Game Over!</h3>
+            <p class="text-sm text-slate-300 mt-1">Je bent al je 3 levens kwijtgeraakt. Probeer het opnieuw om Level 2 te halen!</p>
+          </div>
+          <button onclick="restartLevel2()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 font-extrabold shadow-lg transition hover:brightness-110">
+            Opnieuw Proberen 🔄
+          </button>
         </div>
 
         <!-- Level 2 Completion Card -->
@@ -519,7 +552,7 @@
           <div>
             <h2 class="text-2xl font-black text-white">Tijdrace Challenge</h2>
             <p class="text-sm text-slate-400 mt-2 max-w-md mx-auto">
-              Test je kennis onder druk! Je hebt <strong>60 seconden</strong> de tijd. De vragen wisselen razendsnel af tussen <em>Quiz-vragen</em> en direct <em>Aanwijzen</em> op het skelet.
+              Test je kennis onder druk! Je hebt <strong>60 seconden</strong> en <strong>3 levens</strong>. De vragen wisselen af tussen <em>Quiz-vragen</em> en direct <em>Aanwijzen</em>.
             </p>
           </div>
           <button onclick="startTimeAttack()" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition">
@@ -534,6 +567,17 @@
               <span class="text-xs text-slate-400 block uppercase font-bold">Huidige Score</span>
               <span class="text-2xl font-black text-fuchsia-400" id="l3-score">0</span>
             </div>
+
+            <!-- Levens Display Level 3 (NIEUW) -->
+            <div class="text-center">
+              <span class="text-xs uppercase tracking-wider text-rose-400 font-bold block">
+                💀 Levens
+              </span>
+              <div id="level3-lives" class="text-xl font-bold mt-0.5 tracking-wider flex items-center justify-center gap-1">
+                <span>💀</span><span>💀</span><span>💀</span>
+              </div>
+            </div>
+
             <div class="text-right">
               <span class="text-xs text-slate-400 block uppercase font-bold text-rose-400">Tijd Over</span>
               <div class="flex items-center justify-end gap-1">
@@ -563,7 +607,7 @@
             🏁
           </div>
           <div>
-            <h3 class="text-2xl font-black text-purple-400">Tijd is om!</h3>
+            <h3 class="text-2xl font-black text-purple-400" id="l3-end-title">Tijd is om!</h3>
             <p class="text-slate-300 mt-2">Je had <strong class="text-2xl text-white mx-1" id="l3-final-score">0</strong> botten goed in 60 seconden.</p>
             <p class="text-sm text-slate-400 mt-2">Jouw Highscore: <span id="l3-high-score" class="font-bold text-fuchsia-400">0</span></p>
           </div>
