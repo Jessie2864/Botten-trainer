@@ -898,35 +898,20 @@ function handleExploreSelect(boneId) {
   highlightBone(bone.id);
 }
 
-// Global SVG Click
+// Global SVG Click Handler
 function handleBoneClick(boneId) {
   if (activeTab === 'explore') {
     handleExploreSelect(boneId);
   } else if (activeTab === 'timeattack' && isTimeAttackActive) {
+    // Alleen in Level 3 antwoorden via het skelet toestaan ALS het een Aanwijs-vraag is!
     if (timeAttackType === 'pinpoint') {
       handleTimeAttackSvgClick(boneId);
-    } else if (timeAttackType === 'quiz') {
-      const clickedBone = BONES_DATA.find(b => b.id === boneId);
-      if (clickedBone) {
-        const matchingOptionBtn = Array.from(document.querySelectorAll('#l3-options button'))
-          .find(btn => btn.innerText.includes(clickedBone.name));
-        if (matchingOptionBtn) {
-          processTimeAttackAnswer(clickedBone.id === timeAttackTarget.id, clickedBone.id, matchingOptionBtn);
-        }
-      }
     }
   } else if (activeTab === 'pinpoint' && unlockedLevel2) {
+    // In Level 2 is aanklikken van het skelet de enige manier om te antwoorden
     handleLevel2Click(boneId);
-  } else if (activeTab === 'quiz' && currentQuizTarget) {
-    const clickedBone = BONES_DATA.find(b => b.id === boneId);
-    if (clickedBone) {
-      const matchingOptionBtn = Array.from(document.querySelectorAll('#quiz-options button'))
-        .find(btn => btn.innerText.includes(clickedBone.name));
-      if (matchingOptionBtn) {
-        handleQuizOptionClick(clickedBone, matchingOptionBtn);
-      }
-    }
   }
+  // Opmerking: In Level 1 (Quiz) en bij Quiz-vragen in Level 3 gebeurt er hier niets meer!
 }
 
 // Init
